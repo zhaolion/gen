@@ -3,6 +3,7 @@ package parser
 import (
 	"go/ast"
 	tc "go/types"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -94,4 +95,15 @@ func tcVarNameToName(in string) types.Name {
 	// nameParts[0] is "var".
 	// nameParts[2:] is the type of the variable, we ignore it for now.
 	return tcNameToName(nameParts[1])
+}
+
+func isInGitDir(path string) bool {
+	tokens := strings.Split(path, string(filepath.Separator))
+	for _, token := range tokens {
+		if token == ".git" {
+			return true
+		}
+	}
+
+	return false
 }

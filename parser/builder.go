@@ -114,10 +114,14 @@ func (b *Builder) AddDirRecursive(dir string) error {
 	// Add the root.
 	if _, err := b.importPackage(dir, true); err != nil {
 		b.logger.Debugf("Ignoring directory %v: %v", dir, err)
+		return err
 	}
 
 	// filepath.Walk does not follow symlinks. We therefore evaluate symlinks and use that with
 	// filepath.Walk.
+	if b.buildPackages[dir] == nil {
+		return errors.Errorf("can't import package at dir %s", dir)
+	}
 	realPath, err := filepath.EvalSymlinks(b.buildPackages[dir].Dir)
 	if err != nil {
 		b.logger.Errorf("failed EvalSymlinks dir: %v err: %+v", dir, err)
@@ -126,6 +130,12 @@ func (b *Builder) AddDirRecursive(dir string) error {
 
 	fn := func(filePath string, info os.FileInfo, err error) error {
 		if info != nil && info.IsDir() {
+			// Ignore .git files
+			if isInGitDir(filePath) {
+				b.logger.Debugf("Ignoring GIT directory %v", filePath)
+				return nil
+			}
+
 			rel := filepath.ToSlash(strings.TrimPrefix(filePath, realPath))
 			if rel != "" {
 				// Make a pkg path.
